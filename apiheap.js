@@ -3,18 +3,61 @@
  *TITLE: Apiheap.js : JavaScript Library 
  *AUTHOR: Tash-had Saqif | tash-had.com 
  *PROJECT: tash-had.github.io/apiheapjs 
+ *CONTRIBUTOR: Noëlle Anthony | noelleanthony.com
  *
  */
-isUndefined = function(value) {
+
+require("http://code.jquery.com/jquery-2.1.4.min.js");
+var $j = jQuery.noConflict();
+
+var isUndefined = function(value) {
     if (typeof(value) === 'undefined' || value === null || value === 'null' || value === undefined) {
+        return true;
+    } else {
+        return false;
+    }
+};
+
+function errorHandle(errMessage) {
+    alert("APIHEAP ERROR: " + errMessage);
+}
+
+function apiRequest(format, FINAL_URL) {
+    var response;
+    try {
+        response = $j.ajax({
+            url: FINAL_URL,
+            dataType: format,
+            type: 'GET',
+            cache: false
+        });
+    } catch (err) {
+        errorHandle("Request Error. Log| " + err);
+    } finally {
+        return response;
+    }
+}
+
+function html_strip(html_to_strip) {
+    return jQuery('<p>' + html_to_strip + '</p>').text();
+}
+
+function preventDuplicate(testValue, testArray) {
+    if (testArray.indexOf(testValue) === -1 && testValue !== 'undefined' && testValue !== undefined &&
+        testValue !== 'default' && typeof(testValue) !== undefined && testValue !== 'null' && testValue !== null) {
         return true;
     } else {
         return false;
     }
 }
 
+function pageToken(json_data) {
+    return json_data.responseJSON.nextPageToken;
+}
+
+
 function apiheap(source, key) {
-    SOURCE_ID = source.toLowerCase();
+    var SOURCE_ID = source.toLowerCase();
     if (SOURCE_ID === "reddit") {
         this.reddit = function(subreddit, listing, opt_params) {
             this.SOURCE_NAME = subreddit;
@@ -43,7 +86,7 @@ function apiheap(source, key) {
                 }
             }
             this.RESPONSE = apiRequest('json', this.FINAL_URL);
-        }
+        };
         this.parse = function(item) {
             var RETURN_VALUE = [],
                 reddit_json_data = this.RESPONSE,
@@ -52,7 +95,7 @@ function apiheap(source, key) {
                 if (isUndefined(itemReq)) {
                     RETURN_VALUE = reddit_json_data.responseJSON.data.children;
                 } else {
-                    $(reddit_json_data.responseJSON.data.children).each(function(index, value) {
+                    $j(reddit_json_data.responseJSON.data.children).each(function(index, value) {
                         RETURN_VALUE.push(value.data[itemReq]);
                     });
                 }
@@ -61,7 +104,7 @@ function apiheap(source, key) {
             } finally {
                 return RETURN_VALUE;
             }
-        }
+        };
     } else if (SOURCE_ID === "tumblr") {
         this.SOURCE_KEY = key;
         this.tumblr = function(tumblr_url, reqItem, opt_params) {
@@ -84,7 +127,7 @@ function apiheap(source, key) {
                 }
             }
             this.RESPONSE = apiRequest('jsonp', this.FINAL_URL);
-        }
+        };
         this.parse = function(item) {
             var tumblrResponse = this.RESPONSE.responseJSON.response,
                 itemReq = item;
@@ -98,9 +141,9 @@ function apiheap(source, key) {
                 } else {
                     var RETURN_VALUE = [];
                     try {
-                        $(tumblrResponse.posts).each(function(index, value) {
+                        $j(tumblrResponse.posts).each(function(index, value) {
                             if (itemReq === "photos_url") {
-                                $(value).each(function(idx, val) {
+                                $j(value).each(function(idx, val) {
                                     RETURN_VALUE.push(val.photos[0].original_size.url);
                                 });
                             } else {
@@ -112,7 +155,7 @@ function apiheap(source, key) {
                     }
                 }
             }
-        }
+        };
     } else if (SOURCE_ID === "bitly") {
         this.SOURCE_KEY = key;
         var bitly_frame = "https://api-ssl.bitly.com/v3/shorten?access_token=" + this.SOURCE_KEY + "&";
@@ -120,11 +163,11 @@ function apiheap(source, key) {
             this.SOURCE_NAME = link;
             this.FINAL_URL = bitly_frame + "longUrl=" + encodeURIComponent(this.SOURCE_NAME) + "&format=json";
             this.RESPONSE = apiRequest('json', this.FINAL_URL);
-        }
+        };
         this.parse = function() {
             var bitly_response = JSON.parse(this.RESPONSE.responseText);
             return bitly_response.data.url;
-        }
+        };
     } else if (SOURCE_ID === "imgur") {
         this.SOURCE_KEY = key;
         this.imgur = function(tag_name, opt_params, topic) {
@@ -157,7 +200,7 @@ function apiheap(source, key) {
                     }
                 }
                 try {
-                    this.RESPONSE = $.ajax({
+                    this.RESPONSE = $j.ajax({
                         url: this.FINAL_URL,
                         dataType: 'json',
                         type: 'GET',
@@ -170,7 +213,7 @@ function apiheap(source, key) {
                     errorHandle("error| LOG:" + err + " ..." + "imgur request error");
                 }
             }
-        }
+        };
         this.parse = function(itemReq) {
             var RETURN_VALUE = [],
                 topic = this.TOPIC,
@@ -184,14 +227,14 @@ function apiheap(source, key) {
             } else {
                 try {
                     if (!topic || isUndefined(topic)) {
-                        $(imgur_api_response.responseJSON.data.items).each(function(index, value) {
-                            $(value).each(function(idx, val) {
+                        $j(imgur_api_response.responseJSON.data.items).each(function(index, value) {
+                            $j(value).each(function(idx, val) {
                                 RETURN_VALUE.push(val[itemReq]);
                             });
                         });
                     } else {
-                        $(imgur_api_response.responseJSON.data).each(function(index, value) {
-                            $(value).each(function(idx, val) {
+                        $j(imgur_api_response.responseJSON.data).each(function(index, value) {
+                            $j(value).each(function(idx, val) {
                                 RETURN_VALUE.push(val[itemReq]);
                             });
                         });
@@ -200,7 +243,7 @@ function apiheap(source, key) {
                     return RETURN_VALUE;
                 }
             }
-        }
+        };
     } else if (SOURCE_ID === "youtube") {
         this.SOURCE_KEY = key;
         this.youtube = function(type, part, opt_params, page_token) {
@@ -229,7 +272,7 @@ function apiheap(source, key) {
                 }
             }
             this.RESPONSE = apiRequest('json', this.FINAL_URL);
-        }
+        };
         this.parse = function(query_array, item) {
             if (isUndefined(item)) {
                 errorHandle("youtube parse error: you must request an item as a parameter");
@@ -238,8 +281,8 @@ function apiheap(source, key) {
                     itemReq = item,
                     RETURN_VALUE = [];
                 try {
-                    $(youtube_data_array).each(function(idx, val) {
-                        $(val.responseJSON.items).each(function(index, value) {
+                    $j(youtube_data_array).each(function(idx, val) {
+                        $j(val.responseJSON.items).each(function(index, value) {
                             switch (itemReq) {
                                 case "type":
                                     RETURN_VALUE.push(value.id.kind);
@@ -289,7 +332,7 @@ function apiheap(source, key) {
                     return RETURN_VALUE;
                 }
             }
-        }
+        };
     } else if (SOURCE_ID === "openweathermap") {
         this.SOURCE_KEY = key;
         this.weather = function(city, custom) {
@@ -306,7 +349,7 @@ function apiheap(source, key) {
                 this.FINAL_URL = "http://api.openweathermap.org/data/2.5/weather?" + this.CUSTOM + "&appid=" + this.SOURCE_KEY;
             }
             this.RESPONSE = apiRequest('json', this.FINAL_URL);
-        }
+        };
         this.parse = function(item) {
             var weather_json_data = this.RESPONSE,
                 itemReq = item;
@@ -320,46 +363,9 @@ function apiheap(source, key) {
                     return weather_json_data.responseJSON[itemReq];
                 }
             }
-        }
+        };
 
     } else {
         errorHandle("error| LOG: invalid source");
     }
-}
-
-function apiRequest(format, FINAL_URL) {
-    var response;
-    try {
-        response = $.ajax({
-            url: FINAL_URL,
-            dataType: format,
-            type: 'GET',
-            cache: false
-        });
-    } catch (err) {
-        errorHandle("Request Error. Log| " + err);
-    } finally {
-        return response;
-    }
-}
-
-function errorHandle(errMessage) {
-    alert("APIHEAP ERROR: " + errMessage);
-}
-
-function html_strip(html_to_strip) {
-    return jQuery('<p>' + html_to_strip + '</p>').text();
-}
-
-function preventDuplicate(testValue, testArray) {
-    if (testArray.indexOf(testValue) === -1 && testValue !== 'undefined' && testValue !== undefined &&
-        testValue !== 'default' && typeof(testValue) !== undefined && testValue !== 'null' && testValue !== null) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function pageToken(json_data) {
-    return json_data.responseJSON.nextPageToken;
 }
